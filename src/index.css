@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-surface-50 text-surface-900 font-sans antialiased;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .kanban-column {
+    @apply bg-surface-100 border border-surface-200 rounded-xl min-h-96 p-4 w-80 flex-shrink-0;
+    @apply transition-all duration-200 hover:shadow-card;
+  }
+  
+  .kanban-card {
+    @apply bg-white border border-surface-200 rounded-lg p-4 mb-3 cursor-pointer;
+    @apply transition-all duration-200 hover:shadow-card hover:border-primary-200;
+    @apply active:scale-98 select-none;
+  }
+  
+  .kanban-card:hover {
+    @apply transform hover:-translate-y-1;
+  }
+  
+  .kanban-card.dragging {
+    @apply rotate-6 shadow-float opacity-90 z-50;
+  }
+  
+  .column-header {
+    @apply flex items-center justify-between mb-4 pb-2 border-b border-surface-200;
+  }
+  
+  .add-card-btn {
+    @apply w-full p-3 text-surface-600 border-2 border-dashed border-surface-300 rounded-lg;
+    @apply transition-all duration-200 hover:border-primary-300 hover:text-primary-600 hover:bg-primary-50;
+  }
+  
+  .board-nav {
+    @apply bg-white/80 backdrop-blur-sm border-b border-surface-200 px-6 py-4;
+    @apply sticky top-0 z-40;
+  }
+  
+  .floating-action {
+    @apply fixed bottom-6 right-6 bg-primary text-white p-4 rounded-full shadow-float;
+    @apply transition-all duration-300 hover:scale-110 hover:shadow-board active:scale-95;
+  }
+}
+
+@layer utilities {
+  .scale-98 {
+    transform: scale(0.98);
+  }
+  
+  .glass-effect {
+    @apply bg-white/70 backdrop-blur-sm border border-white/20;
+  }
+  
+  .gradient-border {
+    @apply relative;
+  }
+  
+  .gradient-border::before {
+    @apply absolute inset-0 p-0.5 bg-gradient-to-r from-primary to-secondary rounded-lg;
+    content: '';
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: xor;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-surface-100 rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-surface-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-surface-400;
+}
+
+/* Drag and drop animations */
+.drag-preview {
+  @apply transform rotate-6 opacity-80 shadow-float;
+}
+
+.drop-zone-active {
+  @apply bg-primary-50 border-primary-300 border-dashed;
+}
+
+.card-enter {
+  @apply animate-slide-up;
+}
+
+.board-enter {
+  @apply animate-fade-in;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .kanban-column {
+    @apply w-72;
+  }
+  
+  .board-nav {
+    @apply px-4 py-3;
+  }
+  
+  .floating-action {
+    @apply bottom-4 right-4 p-3;
+  }
+}
+
+@media (max-width: 640px) {
+  .kanban-column {
+    @apply w-64;
+  }
+}
