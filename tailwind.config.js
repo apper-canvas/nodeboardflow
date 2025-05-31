@@ -5,9 +5,19 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {
+extend: {
       colors: {
         primary: {
+          50: '#eef2ff',
+          100: '#e0e7ff',
+          200: '#c7d2fe',
+          300: '#a5b4fc',
+          400: '#818cf8',
+          500: '#6366f1',
+          600: '#4f46e5',
+          700: '#4338ca',
+          800: '#3730a3',
+          900: '#312e81',
           DEFAULT: '#6366f1',
           light: '#8b8cf8',
           dark: '#4f46e5'
@@ -27,7 +37,7 @@ export default {
           500: '#64748b',
           600: '#475569',
           700: '#334155',
-800: '#1e293b',
+          800: '#1e293b',
           900: '#0f172a'
         },
         border: '#e2e8f0'
