@@ -5,27 +5,27 @@ import { format } from 'date-fns'
 import ApperIcon from './ApperIcon'
 
 const MainFeature = () => {
-  const [columns, setColumns] = useState([
+const [columns, setColumns] = useState([
     {
       id: '1',
       title: 'To Do',
       cards: [
-        { id: 'card-1', title: 'Design wireframes', description: 'Create initial wireframes for the new feature', assignee: 'Alex Chen', priority: 'high' },
+        { id: 'card-1', title: 'Design wireframes', description: 'Create initial wireframes for the new feature', assignee: 'Alex Chen', priority: 'high', dueDate: '2024-02-15' },
         { id: 'card-2', title: 'Setup development environment', description: 'Configure local development setup', assignee: 'Sarah Kim', priority: 'medium' }
       ]
     },
     {
       id: '2',
-      title: 'In Progress',
+title: 'In Progress',
       cards: [
-        { id: 'card-3', title: 'Implement authentication', description: 'Add login and signup functionality', assignee: 'Mike Johnson', priority: 'high' }
+        { id: 'card-3', title: 'Implement authentication', description: 'Add login and signup functionality', assignee: 'Mike Johnson', priority: 'high', dueDate: '2024-02-20' }
       ]
     },
     {
       id: '3',
-      title: 'Review',
+title: 'Review',
       cards: [
-        { id: 'card-4', title: 'Code review for API endpoints', description: 'Review REST API implementation', assignee: 'Emma Davis', priority: 'medium' }
+        { id: 'card-4', title: 'Code review for API endpoints', description: 'Review REST API implementation', assignee: 'Emma Davis', priority: 'medium', dueDate: '2024-02-18' }
       ]
     },
     {
@@ -53,24 +53,24 @@ const [draggedCard, setDraggedCard] = useState(null)
       columns: [
         {
           id: '1',
-          title: 'To Do',
+title: 'To Do',
           cards: [
-            { id: 'card-1', title: 'Design wireframes', description: 'Create initial wireframes for the new feature', assignee: 'Alex Chen', priority: 'high' },
+            { id: 'card-1', title: 'Design wireframes', description: 'Create initial wireframes for the new feature', assignee: 'Alex Chen', priority: 'high', dueDate: '2024-02-15' },
             { id: 'card-2', title: 'Setup development environment', description: 'Configure local development setup', assignee: 'Sarah Kim', priority: 'medium' }
           ]
         },
         {
           id: '2',
-          title: 'In Progress',
+title: 'In Progress',
           cards: [
-            { id: 'card-3', title: 'Implement authentication', description: 'Add login and signup functionality', assignee: 'Mike Johnson', priority: 'high' }
+            { id: 'card-3', title: 'Implement authentication', description: 'Add login and signup functionality', assignee: 'Mike Johnson', priority: 'high', dueDate: '2024-02-20' }
           ]
         },
         {
           id: '3',
-          title: 'Review',
+title: 'Review',
           cards: [
-            { id: 'card-4', title: 'Code review for API endpoints', description: 'Review REST API implementation', assignee: 'Emma Davis', priority: 'medium' }
+            { id: 'card-4', title: 'Code review for API endpoints', description: 'Review REST API implementation', assignee: 'Emma Davis', priority: 'medium', dueDate: '2024-02-18' }
           ]
         },
         {
@@ -605,9 +605,50 @@ const updateCard = (cardId, updatedCard) => {
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
-              </select>
+</select>
             </div>
 
+            {/* Due Date */}
+            <div className="mb-6">
+              <label className="text-sm font-medium text-surface-700 mb-2 block">Due Date</label>
+              <div className="space-y-3">
+                <div className="flex space-x-2">
+                  <input
+                    type="date"
+                    value={selectedCard.dueDate || ''}
+                    onChange={(e) => {
+                      const newDate = e.target.value
+                      updateCard(selectedCard.id, { dueDate: newDate })
+                      toast.success('Due date updated')
+                    }}
+                    className="flex-1 p-2 border border-surface-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                  />
+                  {selectedCard.dueDate && (
+                    <button
+                      onClick={() => {
+                        updateCard(selectedCard.id, { dueDate: null })
+                        toast.success('Due date cleared')
+                      }}
+                      className="px-3 py-2 text-surface-600 border border-surface-300 rounded-lg hover:bg-surface-50 transition-colors"
+                      title="Clear due date"
+                    >
+                      <ApperIcon name="X" className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Calendar View Toggle */}
+                <div className="border-t border-surface-200 pt-3">
+                  <CalendarView 
+                    selectedDate={selectedCard.dueDate} 
+                    onDateSelect={(date) => {
+                      updateCard(selectedCard.id, { dueDate: date })
+                      toast.success('Due date updated')
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
             {/* Comments */}
             <div className="mb-6">
               <label className="text-sm font-medium text-surface-700 mb-2 block">Comments</label>
@@ -664,10 +705,164 @@ const updateCard = (cardId, updatedCard) => {
                 )}
               </div>
             </div>
-          </div>
+</div>
         </motion.div>
       </motion.div>
     )
+  }
+  // Calendar Component
+  const CalendarView = ({ selectedDate, onDateSelect }) => {
+    const [currentDate, setCurrentDate] = useState(() => {
+      if (selectedDate) {
+        return new Date(selectedDate)
+      }
+      return new Date()
+    })
+
+    const today = new Date()
+    const currentYear = currentDate.getFullYear()
+    const currentMonth = currentDate.getMonth()
+
+    // Get first day of month and number of days
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1)
+    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0)
+    const firstDayWeekday = firstDayOfMonth.getDay()
+    const daysInMonth = lastDayOfMonth.getDate()
+
+    // Generate calendar days
+    const calendarDays = []
+    
+    // Previous month's trailing days
+    const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate()
+    for (let i = firstDayWeekday - 1; i >= 0; i--) {
+      calendarDays.push({
+        day: prevMonthLastDay - i,
+        isCurrentMonth: false,
+        date: new Date(currentYear, currentMonth - 1, prevMonthLastDay - i)
+      })
+    }
+
+    // Current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+      calendarDays.push({
+        day,
+        isCurrentMonth: true,
+        date: new Date(currentYear, currentMonth, day)
+      })
+    }
+
+    // Next month's leading days
+    const remainingDays = 42 - calendarDays.length // 6 rows × 7 days
+    for (let day = 1; day <= remainingDays; day++) {
+      calendarDays.push({
+        day,
+        isCurrentMonth: false,
+        date: new Date(currentYear, currentMonth + 1, day)
+      })
+    }
+
+    const formatDateForComparison = (date) => {
+      return format(date, 'yyyy-MM-dd')
+    }
+
+    const isToday = (date) => {
+      return formatDateForComparison(date) === formatDateForComparison(today)
+    }
+
+    const isSelected = (date) => {
+      return selectedDate && formatDateForComparison(date) === selectedDate
+    }
+
+    const isPastDate = (date) => {
+      return date < today && !isToday(date)
+    }
+
+    const navigateMonth = (direction) => {
+      setCurrentDate(new Date(currentYear, currentMonth + direction, 1))
+    }
+
+    return (
+      <div className="bg-surface-50 rounded-lg p-4">
+        {/* Calendar Header */}
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => navigateMonth(-1)}
+            className="p-1 hover:bg-surface-200 rounded-md transition-colors"
+          >
+            <ApperIcon name="ChevronLeft" className="w-4 h-4 text-surface-600" />
+          </button>
+          
+          <div className="text-sm font-medium text-surface-900">
+            {format(currentDate, 'MMMM yyyy')}
+          </div>
+          
+          <button
+            onClick={() => navigateMonth(1)}
+            className="p-1 hover:bg-surface-200 rounded-md transition-colors"
+          >
+            <ApperIcon name="ChevronRight" className="w-4 h-4 text-surface-600" />
+          </button>
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7 gap-1">
+          {/* Weekday Headers */}
+          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+            <div key={day} className="text-xs text-surface-500 text-center py-2 font-medium">
+              {day}
+            </div>
+          ))}
+
+          {/* Calendar Days */}
+          {calendarDays.map((dayObj, index) => {
+            const dateStr = formatDateForComparison(dayObj.date)
+            
+            return (
+              <button
+                key={index}
+                onClick={() => {
+                  if (dayObj.isCurrentMonth && !isPastDate(dayObj.date)) {
+                    onDateSelect(dateStr)
+                  }
+                }}
+                disabled={!dayObj.isCurrentMonth || isPastDate(dayObj.date)}
+                className={`
+                  w-8 h-8 text-xs rounded-md transition-colors
+                  ${dayObj.isCurrentMonth 
+                    ? 'text-surface-900' 
+                    : 'text-surface-400'
+                  }
+                  ${isToday(dayObj.date) 
+                    ? 'bg-primary text-white font-medium' 
+                    : ''
+                  }
+                  ${isSelected(dayObj.date) && !isToday(dayObj.date)
+                    ? 'bg-primary-100 text-primary-700 font-medium ring-2 ring-primary-300' 
+                    : ''
+                  }
+                  ${isPastDate(dayObj.date)
+                    ? 'opacity-40 cursor-not-allowed'
+                    : dayObj.isCurrentMonth 
+                      ? 'hover:bg-surface-200 cursor-pointer' 
+                      : ''
+                  }
+                `}
+              >
+                {dayObj.day}
+              </button>
+            )
+          })}
+        </div>
+
+        {selectedDate && (
+          <div className="mt-3 pt-3 border-t border-surface-200">
+            <div className="text-xs text-surface-600 text-center">
+              Selected: {format(new Date(selectedDate), 'MMM d, yyyy')}
+            </div>
+          </div>
+        )}
+      </div>
+)
   }
 
   const getPriorityColor = (priority) => {
@@ -678,6 +873,7 @@ const updateCard = (cardId, updatedCard) => {
       default: return 'bg-surface-100 text-surface-700 border-surface-200'
     }
   }
+
   return (
     <div className="w-full">
       {/* Board Header */}
@@ -807,11 +1003,18 @@ animate={{ opacity: 1, y: 0 }}
                           {card.description}
                         </p>
                       )}
-                      
-                      <div className="flex items-center justify-between">
-                        <span className={`px-2 py-1 text-xs rounded-full border ${getPriorityColor(card.priority)}`}>
-                          {card.priority}
-                        </span>
+<div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 text-xs rounded-full border ${getPriorityColor(card.priority)}`}>
+                            {card.priority}
+                          </span>
+                          {card.dueDate && (
+                            <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 border border-blue-200 flex items-center space-x-1">
+                              <ApperIcon name="Calendar" className="w-3 h-3" />
+                              <span>{format(new Date(card.dueDate), 'MMM d')}</span>
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center space-x-2">
                           <div className="w-6 h-6 bg-gradient-to-br from-secondary to-primary rounded-full flex items-center justify-center text-white text-xs">
                             {card.assignee[0]}
