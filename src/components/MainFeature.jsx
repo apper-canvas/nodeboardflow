@@ -656,13 +656,16 @@ animate={{ opacity: 1, y: 0 }}
           </div>
         ))}
       </motion.div>
-
-      {/* Card Detail Panel */}
+{/* Card Detail Panel */}
       <AnimatePresence>
         {showCardDetail && <CardDetailPanel />}
-</AnimatePresence>
+      </AnimatePresence>
+
+      {/* Create Board Modal */}
+      <AnimatePresence>
+        {showCreateBoard && <CreateBoardModal />}
+      </AnimatePresence>
     </div>
   )
 }
-
 export default MainFeature

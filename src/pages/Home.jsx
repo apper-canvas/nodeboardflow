@@ -43,8 +43,12 @@ const Home = () => {
                 className="w-5 h-5 text-surface-700" 
               />
             </motion.button>
-            
-            <motion.button
+<motion.button
+              onClick={() => {
+                // Find MainFeature component and trigger board creation
+                const event = new CustomEvent('createNewBoard');
+                document.dispatchEvent(event);
+              }}
               className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors duration-200"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
