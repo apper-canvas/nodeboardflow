@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
+import { format } from 'date-fns'
 import ApperIcon from './ApperIcon'
 
 const MainFeature = () => {
@@ -36,12 +37,13 @@ const MainFeature = () => {
     }
   ])
 
-  const [draggedCard, setDraggedCard] = useState(null)
+const [draggedCard, setDraggedCard] = useState(null)
   const [draggedOverColumn, setDraggedOverColumn] = useState(null)
   const [showAddCard, setShowAddCard] = useState(null)
   const [newCardTitle, setNewCardTitle] = useState('')
   const [newCardDescription, setNewCardDescription] = useState('')
-
+  const [selectedCard, setSelectedCard] = useState(null)
+  const [showCardDetail, setShowCardDetail] = useState(false)
   const dragCounter = useRef(0)
 
   const handleDragStart = (e, card, columnId) => {
@@ -135,9 +137,22 @@ const MainFeature = () => {
 
     setColumns(newColumns)
     setNewCardTitle('')
-    setNewCardDescription('')
+setNewCardDescription('')
     setShowAddCard(null)
     toast.success('Card created successfully')
+  }
+
+  const updateCard = (cardId, updatedCard) => {
+    const newColumns = columns.map(column => ({
+      ...column,
+      cards: column.cards.map(card => 
+        card.id === cardId ? { ...card, ...updatedCard } : card
+      )
+    }))
+    
+    setColumns(newColumns)
+    setSelectedCard({ ...selectedCard, ...updatedCard })
+    toast.success('Card updated successfully')
   }
 
   const deleteCard = (cardId, columnId) => {
@@ -153,6 +168,285 @@ const MainFeature = () => {
 
     setColumns(newColumns)
     toast.success('Card deleted')
+}
+
+  const openCardDetail = (card) => {
+    const cardWithComments = {
+      ...card,
+      comments: card.comments || []
+    }
+    setSelectedCard(cardWithComments)
+    setShowCardDetail(true)
+  }
+
+  const closeCardDetail = () => {
+    setShowCardDetail(false)
+    setSelectedCard(null)
+  }
+
+  const CardDetailPanel = () => {
+    const [editingTitle, setEditingTitle] = useState(false)
+    const [editingDescription, setEditingDescription] = useState(false)
+    const [tempTitle, setTempTitle] = useState(selectedCard?.title || '')
+    const [tempDescription, setTempDescription] = useState(selectedCard?.description || '')
+    const [tempAssignee, setTempAssignee] = useState(selectedCard?.assignee || '')
+    const [tempPriority, setTempPriority] = useState(selectedCard?.priority || 'medium')
+    const [newComment, setNewComment] = useState('')
+
+    const saveTitle = () => {
+      if (tempTitle.trim()) {
+        updateCard(selectedCard.id, { title: tempTitle.trim() })
+        setEditingTitle(false)
+      }
+    }
+
+    const saveDescription = () => {
+      updateCard(selectedCard.id, { description: tempDescription.trim() })
+      setEditingDescription(false)
+    }
+
+    const saveAssignee = () => {
+      updateCard(selectedCard.id, { assignee: tempAssignee.trim() || 'Unassigned' })
+    }
+
+    const savePriority = () => {
+      updateCard(selectedCard.id, { priority: tempPriority })
+    }
+
+    const addComment = () => {
+      if (!newComment.trim()) return
+
+      const comment = {
+        id: `comment-${Date.now()}`,
+        text: newComment.trim(),
+        author: 'Current User',
+        timestamp: new Date()
+      }
+
+      const updatedComments = [...(selectedCard.comments || []), comment]
+      updateCard(selectedCard.id, { comments: updatedComments })
+      setNewComment('')
+      toast.success('Comment added')
+    }
+
+    const deleteComment = (commentId) => {
+      const updatedComments = selectedCard.comments.filter(c => c.id !== commentId)
+      updateCard(selectedCard.id, { comments: updatedComments })
+      toast.success('Comment deleted')
+    }
+
+    if (!selectedCard) return null
+
+    return (
+      <motion.div
+        className="fixed inset-0 z-50 flex"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        {/* Backdrop */}
+        <div 
+          className="flex-1 bg-black/50 backdrop-blur-sm"
+          onClick={closeCardDetail}
+        />
+        
+        {/* Panel */}
+        <motion.div
+          className="w-full max-w-md bg-white shadow-float overflow-y-auto"
+          initial={{ x: '100%' }}
+          animate={{ x: 0 }}
+          exit={{ x: '100%' }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        >
+          <div className="p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-2">
+                <ApperIcon name="FileText" className="w-5 h-5 text-surface-600" />
+                <span className="text-sm text-surface-600">Card Details</span>
+              </div>
+              <button
+                onClick={closeCardDetail}
+                className="p-1 hover:bg-surface-100 rounded-md transition-colors"
+              >
+                <ApperIcon name="X" className="w-5 h-5 text-surface-600" />
+              </button>
+            </div>
+
+            {/* Title */}
+            <div className="mb-6">
+              <label className="text-sm font-medium text-surface-700 mb-2 block">Title</label>
+              {editingTitle ? (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={tempTitle}
+                    onChange={(e) => setTempTitle(e.target.value)}
+                    className="w-full p-2 border border-surface-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                    autoFocus
+                  />
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={saveTitle}
+                      className="px-3 py-1.5 bg-primary text-white rounded-md text-sm hover:bg-primary-dark transition-colors"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingTitle(false)
+                        setTempTitle(selectedCard.title)
+                      }}
+                      className="px-3 py-1.5 text-surface-600 border border-surface-300 rounded-md text-sm hover:bg-surface-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="p-2 rounded-lg hover:bg-surface-50 cursor-pointer transition-colors"
+                  onClick={() => setEditingTitle(true)}
+                >
+                  <h2 className="text-lg font-semibold text-surface-900">
+                    {selectedCard.title}
+                  </h2>
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            <div className="mb-6">
+              <label className="text-sm font-medium text-surface-700 mb-2 block">Description</label>
+              {editingDescription ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={tempDescription}
+                    onChange={(e) => setTempDescription(e.target.value)}
+                    className="w-full p-2 border border-surface-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none h-24 resize-none"
+                    placeholder="Add a description..."
+                    autoFocus
+                  />
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={saveDescription}
+                      className="px-3 py-1.5 bg-primary text-white rounded-md text-sm hover:bg-primary-dark transition-colors"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingDescription(false)
+                        setTempDescription(selectedCard.description || '')
+                      }}
+                      className="px-3 py-1.5 text-surface-600 border border-surface-300 rounded-md text-sm hover:bg-surface-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="p-2 rounded-lg hover:bg-surface-50 cursor-pointer transition-colors min-h-[60px]"
+                  onClick={() => setEditingDescription(true)}
+                >
+                  <p className="text-surface-600 text-sm">
+                    {selectedCard.description || 'Click to add a description...'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Assignee */}
+            <div className="mb-6">
+              <label className="text-sm font-medium text-surface-700 mb-2 block">Assignee</label>
+              <input
+                type="text"
+                value={tempAssignee}
+                onChange={(e) => setTempAssignee(e.target.value)}
+                onBlur={saveAssignee}
+                className="w-full p-2 border border-surface-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                placeholder="Enter assignee name..."
+              />
+            </div>
+
+            {/* Priority */}
+            <div className="mb-6">
+              <label className="text-sm font-medium text-surface-700 mb-2 block">Priority</label>
+              <select
+                value={tempPriority}
+                onChange={(e) => {
+                  setTempPriority(e.target.value)
+                  savePriority()
+                }}
+                className="w-full p-2 border border-surface-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+
+            {/* Comments */}
+            <div className="mb-6">
+              <label className="text-sm font-medium text-surface-700 mb-2 block">Comments</label>
+              
+              {/* Add Comment */}
+              <div className="mb-4">
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && addComment()}
+                    className="flex-1 p-2 border border-surface-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                    placeholder="Add a comment..."
+                  />
+                  <button
+                    onClick={addComment}
+                    className="px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+                  >
+                    <ApperIcon name="Send" className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Comments List */}
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {selectedCard.comments?.map((comment) => (
+                  <div key={comment.id} className="bg-surface-50 rounded-lg p-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-sm font-medium text-surface-900">
+                            {comment.author}
+                          </span>
+                          <span className="text-xs text-surface-500">
+                            {format(new Date(comment.timestamp), 'MMM d, h:mm a')}
+                          </span>
+                        </div>
+                        <p className="text-sm text-surface-700">{comment.text}</p>
+                      </div>
+                      <button
+                        onClick={() => deleteComment(comment.id)}
+                        className="text-surface-400 hover:text-red-500 transition-colors"
+                      >
+                        <ApperIcon name="Trash2" className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {(!selectedCard.comments || selectedCard.comments.length === 0) && (
+                  <p className="text-surface-500 text-sm text-center py-4">
+                    No comments yet. Be the first to comment!
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    )
   }
 
   const getPriorityColor = (priority) => {
@@ -163,7 +457,6 @@ const MainFeature = () => {
       default: return 'bg-surface-100 text-surface-700 border-surface-200'
     }
   }
-
   return (
     <div className="w-full">
       {/* Board Header */}
@@ -240,10 +533,11 @@ const MainFeature = () => {
                       onDragStart={(e) => handleDragStart(e, card, column.id)}
                       onDragEnd={handleDragEnd}
                       initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
+animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.3, delay: cardIndex * 0.05 }}
                       layout
+                      onClick={() => openCardDetail(card)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="font-medium text-surface-900 text-sm leading-tight flex-1">
@@ -358,10 +652,15 @@ const MainFeature = () => {
                 <p className="text-xs text-surface-600">{column.title}</p>
                 <p className="text-lg font-bold text-surface-900">{column.cards.length}</p>
               </div>
-            </div>
+</div>
           </div>
         ))}
       </motion.div>
+
+      {/* Card Detail Panel */}
+      <AnimatePresence>
+        {showCardDetail && <CardDetailPanel />}
+</AnimatePresence>
     </div>
   )
 }
