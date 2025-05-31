@@ -44,8 +44,59 @@ const [draggedCard, setDraggedCard] = useState(null)
   const [newCardDescription, setNewCardDescription] = useState('')
   const [selectedCard, setSelectedCard] = useState(null)
   const [showCardDetail, setShowCardDetail] = useState(false)
+  const [showCreateBoard, setShowCreateBoard] = useState(false)
+  const [boards, setBoards] = useState([
+    {
+      id: 'board-1',
+      name: 'Project Alpha',
+      description: 'Main project dashboard',
+      columns: [
+        {
+          id: '1',
+          title: 'To Do',
+          cards: [
+            { id: 'card-1', title: 'Design wireframes', description: 'Create initial wireframes for the new feature', assignee: 'Alex Chen', priority: 'high' },
+            { id: 'card-2', title: 'Setup development environment', description: 'Configure local development setup', assignee: 'Sarah Kim', priority: 'medium' }
+          ]
+        },
+        {
+          id: '2',
+          title: 'In Progress',
+          cards: [
+            { id: 'card-3', title: 'Implement authentication', description: 'Add login and signup functionality', assignee: 'Mike Johnson', priority: 'high' }
+          ]
+        },
+        {
+          id: '3',
+          title: 'Review',
+          cards: [
+            { id: 'card-4', title: 'Code review for API endpoints', description: 'Review REST API implementation', assignee: 'Emma Davis', priority: 'medium' }
+          ]
+        },
+        {
+          id: '4',
+          title: 'Done',
+          cards: [
+            { id: 'card-5', title: 'Project setup', description: 'Initialize project repository and basic structure', assignee: 'Team Lead', priority: 'low' }
+          ]
+        }
+      ]
+    }
+  ])
+  const [currentBoardId, setCurrentBoardId] = useState('board-1')
   const dragCounter = useRef(0)
+// Get current board data
+  const currentBoard = boards.find(board => board.id === currentBoardId)
+  const currentColumns = currentBoard ? currentBoard.columns : []
 
+  // Update board columns
+  const updateBoardColumns = (newColumns) => {
+    setBoards(boards.map(board => 
+      board.id === currentBoardId 
+        ? { ...board, columns: newColumns }
+        : board
+    ))
+  }
   const handleDragStart = (e, card, columnId) => {
     setDraggedCard({ card, sourceColumnId: columnId })
     e.dataTransfer.effectAllowed = 'move'
@@ -89,9 +140,9 @@ const [draggedCard, setDraggedCard] = useState(null)
     if (sourceColumnId === targetColumnId) {
       setDraggedCard(null)
       return
-    }
+}
 
-    const newColumns = columns.map(column => {
+    const newColumns = currentColumns.map(column => {
       if (column.id === sourceColumnId) {
         return {
           ...column,
@@ -107,10 +158,10 @@ const [draggedCard, setDraggedCard] = useState(null)
       return column
     })
 
-    setColumns(newColumns)
-    setDraggedCard(null)
+    updateBoardColumns(newColumns)
+setDraggedCard(null)
 
-    const targetColumn = columns.find(col => col.id === targetColumnId)
+    const targetColumn = currentColumns.find(col => col.id === targetColumnId)
     toast.success(`Card moved to ${targetColumn.title}`)
   }
 
@@ -123,9 +174,9 @@ const [draggedCard, setDraggedCard] = useState(null)
       description: newCardDescription,
       assignee: 'Unassigned',
       priority: 'medium'
-    }
+}
 
-    const newColumns = columns.map(column => {
+    const newColumns = currentColumns.map(column => {
       if (column.id === columnId) {
         return {
           ...column,
@@ -135,28 +186,27 @@ const [draggedCard, setDraggedCard] = useState(null)
       return column
     })
 
-    setColumns(newColumns)
+    updateBoardColumns(newColumns)
     setNewCardTitle('')
-setNewCardDescription('')
+    setNewCardDescription('')
     setShowAddCard(null)
     toast.success('Card created successfully')
   }
-
-  const updateCard = (cardId, updatedCard) => {
-    const newColumns = columns.map(column => ({
+const updateCard = (cardId, updatedCard) => {
+    const newColumns = currentColumns.map(column => ({
       ...column,
-      cards: column.cards.map(card => 
+      cards: column.cards.map(card =>
         card.id === cardId ? { ...card, ...updatedCard } : card
       )
     }))
     
-    setColumns(newColumns)
+    updateBoardColumns(newColumns)
     setSelectedCard({ ...selectedCard, ...updatedCard })
     toast.success('Card updated successfully')
-  }
+}
 
   const deleteCard = (cardId, columnId) => {
-    const newColumns = columns.map(column => {
+    const newColumns = currentColumns.map(column => {
       if (column.id === columnId) {
         return {
           ...column,
@@ -166,9 +216,180 @@ setNewCardDescription('')
       return column
     })
 
-    setColumns(newColumns)
+    updateBoardColumns(newColumns)
     toast.success('Card deleted')
-}
+  }
+
+  // Board management functions
+  const createBoard = (boardData) => {
+    // Check for duplicate names
+    const existingBoard = boards.find(board => 
+      board.name.toLowerCase() === boardData.name.toLowerCase()
+    )
+    
+    if (existingBoard) {
+      toast.error('A board with this name already exists')
+      return false
+    }
+
+    const newBoard = {
+      id: `board-${Date.now()}`,
+      name: boardData.name,
+      description: boardData.description,
+      columns: [
+        { id: '1', title: 'To Do', cards: [] },
+        { id: '2', title: 'In Progress', cards: [] },
+        { id: '3', title: 'Review', cards: [] },
+        { id: '4', title: 'Done', cards: [] }
+      ]
+    }
+
+    setBoards([...boards, newBoard])
+    setCurrentBoardId(newBoard.id)
+    setShowCreateBoard(false)
+    toast.success(`Board "${boardData.name}" created successfully`)
+    return true
+  }
+
+  const switchBoard = (boardId) => {
+    setCurrentBoardId(boardId)
+    const board = boards.find(b => b.id === boardId)
+    toast.success(`Switched to "${board.name}"`)
+  }
+
+  const deleteBoard = (boardId) => {
+    if (boards.length <= 1) {
+      toast.error('Cannot delete the last board')
+      return
+    }
+
+    if (window.confirm('Are you sure you want to delete this board? This action cannot be undone.')) {
+      const boardToDelete = boards.find(b => b.id === boardId)
+      setBoards(boards.filter(board => board.id !== boardId))
+      
+      if (currentBoardId === boardId) {
+        const remainingBoard = boards.find(board => board.id !== boardId)
+        setCurrentBoardId(remainingBoard.id)
+      }
+      
+      toast.success(`Board "${boardToDelete.name}" deleted`)
+    }
+  }
+
+  // Listen for board creation events from Home component
+  React.useEffect(() => {
+    const handleCreateBoard = () => {
+      setShowCreateBoard(true)
+    }
+
+    document.addEventListener('createNewBoard', handleCreateBoard)
+    return () => {
+      document.removeEventListener('createNewBoard', handleCreateBoard)
+    }
+  }, [])
+
+  // Create Board Modal Component
+  const CreateBoardModal = () => {
+    const [boardName, setBoardName] = useState('')
+    const [boardDescription, setBoardDescription] = useState('')
+    const [isCreating, setIsCreating] = useState(false)
+
+    const handleSubmit = async (e) => {
+      e.preventDefault()
+      if (!boardName.trim()) {
+        toast.error('Board name is required')
+        return
+      }
+
+      setIsCreating(true)
+      const success = createBoard({
+        name: boardName.trim(),
+        description: boardDescription.trim()
+      })
+      
+      if (success) {
+        setBoardName('')
+        setBoardDescription('')
+      }
+      setIsCreating(false)
+    }
+
+    return (
+      <motion.div
+        className="fixed inset-0 z-50 flex items-center justify-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <div 
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowCreateBoard(false)}
+        />
+        
+        <motion.div
+          className="relative bg-white rounded-xl shadow-float p-6 w-full max-w-md mx-4"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-surface-900">Create New Board</h2>
+            <button
+              onClick={() => setShowCreateBoard(false)}
+              className="p-1 hover:bg-surface-100 rounded-md transition-colors"
+            >
+              <ApperIcon name="X" className="w-5 h-5 text-surface-600" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-surface-700 mb-2">
+                Board Name *
+              </label>
+              <input
+                type="text"
+                value={boardName}
+                onChange={(e) => setBoardName(e.target.value)}
+                className="w-full p-3 border border-surface-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                placeholder="Enter board name..."
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-surface-700 mb-2">
+                Description
+              </label>
+              <textarea
+                value={boardDescription}
+                onChange={(e) => setBoardDescription(e.target.value)}
+                className="w-full p-3 border border-surface-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none h-20 resize-none"
+                placeholder="Enter board description..."
+              />
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <button
+                type="submit"
+                disabled={isCreating || !boardName.trim()}
+                className="flex-1 bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {isCreating ? 'Creating...' : 'Create Board'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCreateBoard(false)}
+                className="px-4 py-2.5 text-surface-600 border border-surface-300 rounded-lg hover:bg-surface-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </motion.div>
+      </motion.div>
+    )
+  }
 
   const openCardDetail = (card) => {
     const cardWithComments = {
@@ -466,14 +687,44 @@ setNewCardDescription('')
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-surface-900 mb-2">
-              Project Alpha Dashboard
-            </h1>
-            <p className="text-surface-600 text-sm sm:text-base">
-              Manage your team's workflow with visual kanban boards
-            </p>
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <div>
+              <div className="flex items-center space-x-3 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold text-surface-900">
+                  {currentBoard?.name || 'BoardFlow'}
+                </h1>
+                
+                {/* Board Selector */}
+                <div className="relative">
+                  <select
+                    value={currentBoardId}
+                    onChange={(e) => switchBoard(e.target.value)}
+                    className="text-sm bg-surface-100 border border-surface-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none cursor-pointer"
+                  >
+                    {boards.map(board => (
+                      <option key={board.id} value={board.id}>
+                        {board.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Delete Board Button */}
+                {boards.length > 1 && (
+                  <button
+                    onClick={() => deleteBoard(currentBoardId)}
+                    className="p-1.5 text-surface-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                    title="Delete Board"
+                  >
+                    <ApperIcon name="Trash2" className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <p className="text-surface-600 text-sm sm:text-base">
+                {currentBoard?.description || 'Manage your team\'s workflow with visual kanban boards'}
+              </p>
+            </div>
           </div>
           <div className="flex items-center space-x-3">
             <div className="flex -space-x-2">
@@ -492,10 +743,10 @@ setNewCardDescription('')
         </div>
       </motion.div>
 
-      {/* Kanban Board */}
+{/* Kanban Board */}
       <div className="overflow-x-auto pb-6">
         <div className="flex space-x-6 min-w-max">
-          {columns.map((column, columnIndex) => (
+          {currentColumns.map((column, columnIndex) => (
             <motion.div
               key={column.id}
               className={`kanban-column ${
@@ -638,9 +889,9 @@ animate={{ opacity: 1, y: 0 }}
         className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.5 }}
+transition={{ duration: 0.5, delay: 0.5 }}
       >
-        {columns.map((column, index) => (
+        {currentColumns.map((column, index) => (
           <div key={column.id} className="bg-white rounded-xl p-4 border border-surface-200 shadow-soft">
             <div className="flex items-center space-x-3">
               <div className={`w-3 h-3 rounded-full ${
